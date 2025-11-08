@@ -98,8 +98,8 @@ module spi_accel_v1_0 #
         .S_AXI_RREADY(s00_axi_rready)
     );
 
-    // Instantiation of SPI Master
-    spi_master spi_master_inst (
+    // Instantiation of SPI Internal
+    spi_internal spi_internal_inst (
         .i_Rst_L(s00_axi_aresetn),
         .i_Clk(s00_axi_aclk),
         .i_spi_mode(spi_mode),

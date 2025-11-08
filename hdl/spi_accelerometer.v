@@ -3,12 +3,12 @@
 // Company: American University of Beirut
 // Engineer:
 //
-// Module Name: spi_master
+// Module Name: spi_internal
 // Description: SPI Master module supporting configurable CPOL/CPHA modes
 //              and multi-byte transfers
 //////////////////////////////////////////////////////////////////////////////////
 
-module spi_master(
+module spi_internal(
     // Control signals
     input wire i_Rst_L,
     input wire i_Clk,
