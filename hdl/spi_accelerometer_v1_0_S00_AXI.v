@@ -169,6 +169,10 @@ module spi_accelerometer_v1_0_S00_AXI #
     wire slv_reg_wren;
     assign slv_reg_wren = axi_wready && S_AXI_WVALID && axi_awready && S_AXI_AWVALID;
 
+    // Implement memory mapped register read enable
+    wire slv_reg_rden;
+    assign slv_reg_rden = axi_arready & S_AXI_ARVALID & ~axi_rvalid;
+
     always @(posedge S_AXI_ACLK) begin
         if (!S_AXI_ARESETN) begin
             control_reg <= 21'h000019;  // Default: mode 3 (CPOL=1, CPHA=1), scale=25, cs_inactive=1
@@ -280,8 +284,5 @@ module spi_accelerometer_v1_0_S00_AXI #
             end
         end
     end
-
-    wire slv_reg_rden;
-    assign slv_reg_rden = axi_arready & S_AXI_ARVALID & ~axi_rvalid;
 
 endmodule
