@@ -44,9 +44,13 @@ Lines 18-31 map the SPI signals to physical ZedBoard pins:
 ├── constraints/
 │   └── zedboard_pmod_ja1.xdc            # Pin mappings for JA1 connector
 ├── src/
-│   ├── spi_driver.h                     # Driver header (to be created)
-│   └── spi_driver.c                     # Driver implementation (to be created)
+│   ├── spi_driver.h                     # Driver header
+│   ├── spi_driver.c                     # Driver implementation
+│   └── digital_level_app.c              # Digital level application
 ├── package_ip.tcl                       # TCL script to package IP
+├── create_vivado_project.tcl            # TCL script to create complete project
+├── fix_block_design.tcl                 # TCL script to fix existing block design
+├── FIX_MISSING_SPI_PORTS.md             # Troubleshooting guide
 ├── project1.pdf                         # Project specification
 └── README.md                            # This file
 ```
@@ -200,20 +204,42 @@ Display the inclination angle in the Y-Z plane on PuTTY terminal, updated every 
 
 ## 🐛 Debugging Tips
 
-1. **No response from ADXL345:**
-   - Check physical connections
-   - Verify SPI mode is set to 3 (CPOL=1, CPHA=1)
-   - Verify clock scale (should be 25 for 4 MHz)
+### 1. Bitstream Generation Fails with "No ports matched" Warnings
 
-2. **Wrong data received:**
-   - Check MISO/MOSI aren't swapped
-   - Verify constraints file is added to project
-   - Check that ports were made external in block design
+**Symptoms:**
+```
+WARNING: [Vivado 12-584] No ports matched 'o_SPI_Clk'
+WARNING: [Vivado 12-584] No ports matched 'o_SPI_MOSI'
+WARNING: [Vivado 12-584] No ports matched 'i_SPI_MISO'
+WARNING: [Vivado 12-584] No ports matched 'o_SPI_CS_n'
+```
 
-3. **IP not appearing in Vivado:**
-   - Verify IP repository path is correct
-   - Refresh IP catalog
-   - Check for errors in TCL console
+**Cause:** SPI ports not exposed as external in block design.
+
+**Solution:** See `FIX_MISSING_SPI_PORTS.md` for detailed instructions. Quick fix:
+```tcl
+# Option 1: Create project from scratch with fix
+source create_vivado_project.tcl
+
+# Option 2: Fix existing project
+# Open your project in Vivado GUI, then run:
+source fix_block_design.tcl
+```
+
+### 2. No Response from ADXL345
+- Check physical connections
+- Verify SPI mode is set to 3 (CPOL=1, CPHA=1)
+- Verify clock scale (should be 25 for 4 MHz)
+
+### 3. Wrong Data Received
+- Check MISO/MOSI aren't swapped
+- Verify constraints file is added to project
+- Check that ports were made external in block design
+
+### 4. IP Not Appearing in Vivado
+- Verify IP repository path is correct
+- Refresh IP catalog
+- Check for errors in TCL console
 
 ## 📚 References
 
