@@ -69,47 +69,61 @@ This document provides comprehensive documentation for the design and implementa
 
 \subsection{Hardware Block Diagram}
 
-The system architecture consists of three main components interconnected via the AMBA AXI protocol:
+Figure \ref{fig:block_diagram} shows the complete system hardware design matching the architecture specified in the project requirements (Project PDF Figure 7). The design is partitioned into the Processing System (PS) and Programmable Logic (PL) sections of the Zynq-7000 device, with the ADXL345 accelerometer as an external peripheral.
 
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-    block/.style={rectangle, draw, fill=blue!20, text width=5em, text centered, minimum height=3em},
-    wideblock/.style={rectangle, draw, fill=blue!20, text width=10em, text centered, minimum height=3em},
-    sensor/.style={rectangle, draw, fill=green!20, text width=6em, text centered, minimum height=3em},
-    line/.style={draw, -latex'},
-    cloud/.style={draw, ellipse, fill=red!20, minimum height=2em}
+    block/.style={rectangle, draw, fill=blue!20, text width=6em, text centered, minimum height=2.5em, font=\small},
+    wideblock/.style={rectangle, draw, fill=blue!10, text width=8em, text centered, minimum height=2.5em, font=\small},
+    sensor/.style={rectangle, draw, fill=green!20, text width=6em, text centered, minimum height=2.5em, font=\small},
+    line/.style={draw, -latex', thick},
+    psbox/.style={rectangle, draw=black, thick, dashed, fill=orange!10},
+    plbox/.style={rectangle, draw=black, thick, dashed, fill=cyan!10}
 ]
 
-% Zynq PS
-\node [wideblock] (ps) {\textbf{Zynq PS7} \\ ARM Cortex-A9};
-\node [block, below=0.5cm of ps] (axi) {M\_AXI\_GP0 \\ 100 MHz};
-\node [cloud, right=0.5cm of ps] (irq) {IRQ\_F2P[0]};
+% Zynq boundary box
+\node[psbox, minimum width=5cm, minimum height=5.5cm, label={[font=\bfseries]above left:PS}] at (0,0.5) {};
+\node[plbox, minimum width=5cm, minimum height=5.5cm, label={[font=\bfseries]above right:PL}] at (5.5,0.5) {};
+\node[font=\bfseries\large] at (2.75, 3.5) {Zynq};
 
-% AXI Interconnect
-\node [wideblock, below=1.5cm of axi] (interconnect) {AXI SmartConnect \\ 1 Master → 2 Slaves};
+% PS components
+\node [wideblock] (arm) at (0, 1.5) {\textbf{ARM} \\ \textbf{Processor} \\ Cortex-A9};
+\node [block] (gic) at (0, -0.5) {\textbf{GIC}};
 
-% Timer
-\node [block, below left=2cm of interconnect] (timer) {\textbf{AXI Timer} \\ 0x42800000};
+% PL components
+\node [wideblock] (interconnect) at (5.5, 0.5) {\textbf{AXI} \\ \textbf{Interconnect}};
+\node [block] (timer) at (5.5, -1.5) {\textbf{AXI Timer}};
+\node [block] (spi) at (5.5, 2.5) {\textbf{SPI Master}};
 
-% SPI Master
-\node [block, below right=2cm of interconnect] (spi) {\textbf{SPI Master} \\ 0x43C00000};
-
-% Sensor
-\node [sensor, below=2cm of spi] (accel) {\textbf{PmodACL} \\ ADXL345 \\ JA1 Connector};
+% External component
+\node [sensor] (accel) at (10, 2.5) {\textbf{ADXL345}};
 
 % Connections
-\draw [line] (ps) -- (axi);
-\draw [line] (axi) -- (interconnect);
-\draw [line] (interconnect) -| (timer);
-\draw [line] (interconnect) -| (spi);
-\draw [line, dashed] (timer) -- ++(0,-1) -| node[near start, above] {interrupt} (irq);
-\draw [line] (spi) -- node[right] {SPI Bus} (accel);
+\draw [line] (arm) -- (interconnect) node[midway, above, font=\footnotesize] {AXI};
+\draw [line] (interconnect) -- (timer);
+\draw [line] (interconnect) -- (spi);
+\draw [line] (timer) -- ++(-1.8, 0) |- (gic) node[near end, right, font=\footnotesize] {IRQ};
+\draw [line] (gic) -- (arm);
+\draw [line] (spi) -- (accel) node[midway, above, font=\footnotesize] {SPI};
+
+% Labels
+\node[font=\footnotesize, text width=4cm, align=center] at (2.75, -2.8) {Processing System};
+\node[font=\footnotesize, text width=4cm, align=center] at (8.25, -2.8) {Programmable Logic};
 
 \end{tikzpicture}
-\caption{System Block Diagram}
+\caption{System Hardware Design (as per Project Figure 7)}
 \label{fig:block_diagram}
 \end{figure}
+
+\textbf{Key Components:}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{PS (Processing System):} ARM Cortex-A9 dual-core processor with GIC for interrupt management
+    \item \textbf{PL (Programmable Logic):} Custom SPI Master IP, AXI Timer, and AXI Interconnect
+    \item \textbf{External:} ADXL345 3-axis accelerometer connected via JA1 Pmod connector
+    \item \textbf{Communication:} AXI4-Lite protocol for register access, SPI for sensor communication
+    \item \textbf{Interrupt Flow:} AXI Timer generates 500ms periodic interrupts routed through GIC to ARM processor
+\end{itemize}
 
 \subsection{Physical Pin Mapping}
 
