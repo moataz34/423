@@ -12,6 +12,7 @@
 #include "spi_driver.h"
 #include "xil_io.h"
 #include "xil_types.h"
+#include "xil_printf.h"
 #include <math.h>
 
 /*****************************************************************************
@@ -22,14 +23,23 @@ void SPI_Init(u32 BaseAddress, u8 spi_mode, u16 clk_scale)
 {
     u32 control_val;
     u32 config_val;
+    u32 status_val;
+
+    xil_printf("  [DEBUG] SPI Base Address: 0x%08X\r\n", BaseAddress);
 
     // Configure CONTROL register: [31:16] = clk_scale, [1:0] = spi_mode
     control_val = ((u32)clk_scale << 16) | (u32)spi_mode;
     Xil_Out32(BaseAddress + SPI_CONTROL_REG_OFFSET, control_val);
+    xil_printf("  [DEBUG] CONTROL register written: 0x%08X\r\n", control_val);
 
     // Configure CONFIG register: [2:0] = cs_inactive_clks (1), [12:8] = tx_count (1)
     config_val = 0x00000101;  // cs_inactive = 1, tx_count = 1
     Xil_Out32(BaseAddress + SPI_CONFIG_REG_OFFSET, config_val);
+    xil_printf("  [DEBUG] CONFIG register written: 0x%08X\r\n", config_val);
+
+    // Read and display initial status
+    status_val = Xil_In32(BaseAddress + SPI_STATUS_REG_OFFSET);
+    xil_printf("  [DEBUG] Initial STATUS register: 0x%08X\r\n", status_val);
 }
 
 void SPI_SetTxCount(u32 BaseAddress, u8 tx_count)
@@ -79,8 +89,16 @@ u8 SPI_IsReady(u32 BaseAddress)
 
 void SPI_WaitReady(u32 BaseAddress)
 {
-    while (!SPI_IsReady(BaseAddress)) {
-        // Wait for SPI to be ready
+    u32 timeout = 100000;  // Timeout counter
+
+    while (!SPI_IsReady(BaseAddress) && timeout > 0) {
+        timeout--;
+    }
+
+    if (timeout == 0) {
+        // Timeout occurred - print debug info
+        u32 status = Xil_In32(BaseAddress + SPI_STATUS_REG_OFFSET);
+        xil_printf("WARNING: SPI_WaitReady timeout! Status=0x%08X\r\n", status);
     }
 }
 
@@ -99,6 +117,12 @@ void SPI_WaitRxValid(u32 BaseAddress)
 
     while (!SPI_IsRxValid(BaseAddress) && timeout > 0) {
         timeout--;
+    }
+
+    if (timeout == 0) {
+        // Timeout occurred - print debug info
+        u32 status = Xil_In32(BaseAddress + SPI_STATUS_REG_OFFSET);
+        xil_printf("WARNING: SPI_WaitRxValid timeout! Status=0x%08X\r\n", status);
     }
 }
 
@@ -159,23 +183,35 @@ u8 ADXL345_ReadReg(u32 BaseAddress, u8 reg_addr)
     u8 dummy = 0x00;
     u8 received_data;
 
+    xil_printf("  [DEBUG] Reading register 0x%02X...\r\n", reg_addr);
+
     // Set TX count to 2 (command byte + dummy byte)
     SPI_SetTxCount(BaseAddress, 2);
+    xil_printf("  [DEBUG] TX count set to 2\r\n");
 
     // Create command byte: [7]=1 (read), [6]=0 (single byte), [5:0]=address
     command = 0x80 | (reg_addr & 0x3F);
+    xil_printf("  [DEBUG] Command byte: 0x%02X\r\n", command);
 
     // Send command byte
+    xil_printf("  [DEBUG] Sending command byte...\r\n");
     SPI_WriteByte(BaseAddress, command);
+    xil_printf("  [DEBUG] Command byte sent\r\n");
 
     // Read response (ignore it, it's from the command byte transfer)
+    xil_printf("  [DEBUG] Reading command response...\r\n");
     SPI_ReadByte(BaseAddress);
+    xil_printf("  [DEBUG] Command response read\r\n");
 
     // Send dummy byte to receive the data
+    xil_printf("  [DEBUG] Sending dummy byte...\r\n");
     SPI_WriteByte(BaseAddress, dummy);
+    xil_printf("  [DEBUG] Dummy byte sent\r\n");
 
     // Read the actual data
+    xil_printf("  [DEBUG] Reading actual data...\r\n");
     received_data = SPI_ReadByte(BaseAddress);
+    xil_printf("  [DEBUG] Data read: 0x%02X\r\n", received_data);
 
     return received_data;
 }
