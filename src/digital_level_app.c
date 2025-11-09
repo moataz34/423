@@ -21,10 +21,10 @@
 /*****************************************************************************
  * Hardware Parameters - UPDATE THESE TO MATCH YOUR DESIGN
  *****************************************************************************/
-#define SPI_MASTER_BASEADDR     XPAR_SPI_MASTER_AXI_0_S00_AXI_BASEADDR
-#define TIMER_DEVICE_ID         XPAR_TMRCTR_0_DEVICE_ID
-#define INTC_DEVICE_ID          XPAR_SCUGIC_0_DEVICE_ID
-#define TIMER_INTERRUPT_ID      XPAR_FABRIC_TMRCTR_0_VEC_ID
+#define SPI_MASTER_BASEADDR     XPAR_SPI_ACCELEROMETER_0_BASEADDR
+#define TIMER_DEVICE_ID         XPAR_XTMRCTR_0_DEVICE_ID
+#define INTC_DEVICE_ID          XPAR_XSCUGIC_SINGLE_DEVICE_ID
+#define TIMER_INTERRUPT_ID      XPAR_FABRIC_AXI_TIMER_0_INTR
 
 // Timer configuration
 #define TIMER_COUNTER_0         0
