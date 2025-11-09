@@ -98,28 +98,75 @@ Based on your Vivado block design instance names:
    - Zynq has a single GIC (Generic Interrupt Controller)
    - Device ID is always 0
 
-## Troubleshooting
+## Compatibility with Newer Vitis Versions
 
-### If xparameters.h is missing macros after Vitis generation:
+### Issue: DEVICE_ID Macros May Not Be Auto-Generated
 
-**Problem:** Missing `XPAR_XTMRCTR_0_DEVICE_ID` or `XPAR_XSCUGIC_SINGLE_DEVICE_ID`
+**Problem:** In newer versions of Vitis (2023.x and later), the auto-generated `xparameters.h` may only include `BASEADDR` macros and omit `DEVICE_ID` macros for standard peripherals.
 
-**Cause:** Sometimes Vitis doesn't generate device ID macros for standard peripherals
+**Affected Macros:**
+- `XPAR_XTMRCTR_0_DEVICE_ID` (Timer device ID)
+- `XPAR_XSCUGIC_SINGLE_DEVICE_ID` (Interrupt controller device ID)
+- `XPAR_FABRIC_AXI_TIMER_0_INTR` (Timer interrupt number)
 
-**Solution:** Check if these equivalent macros exist:
-- `XPAR_XSCUGIC_0_DEVICE_ID` (use this instead of `XPAR_XSCUGIC_SINGLE_DEVICE_ID`)
-- Device IDs are typically just `0` for the first instance
+**Solution:** The application code now includes a **compatibility layer** (lines 21-54 in `digital_level_app.c`) that automatically handles both old and new Vitis versions:
 
-**Alternative:** Add these lines to your application code if needed:
 ```c
-#ifndef XPAR_XSCUGIC_SINGLE_DEVICE_ID
-#define XPAR_XSCUGIC_SINGLE_DEVICE_ID XPAR_XSCUGIC_0_DEVICE_ID
+/*****************************************************************************
+ * Compatibility Layer for Different Vitis Versions
+ *****************************************************************************/
+
+// Timer Device ID - fallback for newer Vitis versions
+#ifndef XPAR_XTMRCTR_0_DEVICE_ID
+    #define XPAR_XTMRCTR_0_DEVICE_ID 0
 #endif
 
-#ifndef XPAR_XTMRCTR_0_DEVICE_ID
-#define XPAR_XTMRCTR_0_DEVICE_ID 0
+// Interrupt Controller Device ID - fallback for newer Vitis versions
+#ifndef XPAR_XSCUGIC_SINGLE_DEVICE_ID
+    #ifdef XPAR_XSCUGIC_0_DEVICE_ID
+        #define XPAR_XSCUGIC_SINGLE_DEVICE_ID XPAR_XSCUGIC_0_DEVICE_ID
+    #else
+        #define XPAR_XSCUGIC_SINGLE_DEVICE_ID 0
+    #endif
+#endif
+
+// Timer Interrupt ID - fallback for newer Vitis versions
+#ifndef XPAR_FABRIC_AXI_TIMER_0_INTR
+    #ifdef XPAR_FABRIC_TMRCTR_0_INTERRUPT_INTR
+        #define XPAR_FABRIC_AXI_TIMER_0_INTR XPAR_FABRIC_TMRCTR_0_INTERRUPT_INTR
+    #else
+        #warning "XPAR_FABRIC_AXI_TIMER_0_INTR not found - using default value 61"
+        #define XPAR_FABRIC_AXI_TIMER_0_INTR 61
+    #endif
 #endif
 ```
+
+**How It Works:**
+1. The code checks if the expected macro is defined in `xparameters.h`
+2. If not found, it provides sensible defaults:
+   - Device IDs default to `0` (first instance of the peripheral)
+   - Alternative macro names are checked (e.g., `XPAR_XSCUGIC_0_DEVICE_ID`)
+   - Interrupt numbers use common defaults or alternative naming patterns
+
+**Benefits:**
+- ✅ Works with both old and new Vitis versions
+- ✅ No manual editing required
+- ✅ Compiler warnings alert you if defaults are used
+- ✅ Future-proof against Vitis toolchain changes
+
+### Important Note About Interrupt Numbers
+
+If you see a warning about `XPAR_FABRIC_AXI_TIMER_0_INTR` using a default value, you may need to verify the correct interrupt number:
+
+1. In Vivado, open your block design
+2. Find the AXI Timer's interrupt output
+3. Note which IRQ line it connects to on the Processing System (typically IRQ_F2P[0] through IRQ_F2P[15])
+4. The interrupt number is: `61 + IRQ_line_number`
+   - IRQ_F2P[0] = interrupt 61
+   - IRQ_F2P[1] = interrupt 62
+   - etc.
+
+Alternatively, check the auto-generated `xparameters.h` and look for any timer-related `_INTR` macro.
 
 ## Files Ready for Vitis
 
