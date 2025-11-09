@@ -19,46 +19,11 @@
 #include <math.h>
 
 /*****************************************************************************
- * Compatibility Layer for Different Vitis Versions
- *
- * In newer Vitis versions, DEVICE_ID macros may not be auto-generated.
- * Instead, only BASEADDR macros are provided. This section provides
- * fallback definitions to ensure compatibility.
- *****************************************************************************/
-
-// Timer Device ID - fallback for newer Vitis versions
-#ifndef XPAR_XTMRCTR_0_DEVICE_ID
-    // In newer versions, if DEVICE_ID is not defined, use 0 for first instance
-    #define XPAR_XTMRCTR_0_DEVICE_ID 0
-#endif
-
-// Interrupt Controller Device ID - fallback for newer Vitis versions
-#ifndef XPAR_XSCUGIC_SINGLE_DEVICE_ID
-    #ifdef XPAR_XSCUGIC_0_DEVICE_ID
-        #define XPAR_XSCUGIC_SINGLE_DEVICE_ID XPAR_XSCUGIC_0_DEVICE_ID
-    #else
-        // Zynq-7000 always has a single GIC with device ID 0
-        #define XPAR_XSCUGIC_SINGLE_DEVICE_ID 0
-    #endif
-#endif
-
-// Timer Interrupt ID - fallback for newer Vitis versions
-#ifndef XPAR_FABRIC_AXI_TIMER_0_INTR
-    #ifdef XPAR_FABRIC_TMRCTR_0_INTERRUPT_INTR
-        #define XPAR_FABRIC_AXI_TIMER_0_INTR XPAR_FABRIC_TMRCTR_0_INTERRUPT_INTR
-    #else
-        // Default fabric interrupt for timer (may need adjustment)
-        #warning "XPAR_FABRIC_AXI_TIMER_0_INTR not found - using default value 61"
-        #define XPAR_FABRIC_AXI_TIMER_0_INTR 61
-    #endif
-#endif
-
-/*****************************************************************************
- * Hardware Parameters - UPDATE THESE TO MATCH YOUR DESIGN
+ * Hardware Parameters
  *****************************************************************************/
 #define SPI_MASTER_BASEADDR     XPAR_SPI_ACCELEROMETER_0_BASEADDR
 #define TIMER_DEVICE_ID         XPAR_XTMRCTR_0_DEVICE_ID
-#define INTC_DEVICE_ID          XPAR_XSCUGIC_SINGLE_DEVICE_ID
+#define INTC_DEVICE_ID          XPAR_XSCUGIC_0_DEVICE_ID
 #define TIMER_INTERRUPT_ID      XPAR_FABRIC_AXI_TIMER_0_INTR
 
 // Timer configuration
